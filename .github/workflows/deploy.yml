@@ -1,0 +1,110 @@
+name: 🚀 Build, Test, Deploy & Release
+
+on:
+    push:
+        tags:
+            - "v*"
+
+permissions:
+    contents: write
+    packages: write
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: 📂 Checkout code
+              uses: actions/checkout@v3
+
+            - name: 🔧 Set up Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: "22"
+
+            - name: 📦 Install dependencies
+              run: npm install
+
+            - name: 🏗️ Build the project
+              run: npm run build
+
+            - name: 📦 Upload build artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: build-artifacts
+                  path: dist/
+
+    test:
+        runs-on: ubuntu-latest
+        needs: build
+        steps:
+            - name: 📂 Checkout code
+              uses: actions/checkout@v3
+
+            - name: 🔧 Set up Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: "22"
+
+            - name: 📦 Install dependencies
+              run: npm install
+
+            - name: 🧪 Run tests
+              run: npm test
+
+    deploy:
+        runs-on: ubuntu-latest
+        needs: test
+        steps:
+            - name: 📂 Checkout code
+              uses: actions/checkout@v3
+
+            - name: 🔧 Set up Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: "22"
+
+            - name: 📦 Install dependencies
+              run: npm install
+
+            - name: 🔍 Extract version from tag
+              id: get-version
+              run: |
+                  echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+                  echo "Extracted version: ${{ env.VERSION }}"
+
+            - name: 📦 Build and publish npm package
+              run: |
+                  npm version ${{ env.VERSION }} --no-git-tag-version
+                  npm run build
+                  npm publish --access public
+
+    release:
+        runs-on: ubuntu-latest
+        needs: deploy
+        steps:
+            - name: 📂 Checkout code
+              uses: actions/checkout@v3
+
+            - name: 📦 Download build artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  name: build-artifacts
+
+            - name: 🔍 Extract version from tag
+              id: get-version
+              run: |
+                  echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+                  echo "Extracted version: ${{ env.VERSION }}"
+
+            - name: 🏷️ Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  name: Release ${{ github.ref_name }}
+                  tag_name: ${{ github.ref_name }}
+                  body: |
+                      ##
+                      - Deployment and package publishing for version ${{ github.ref_name }}.
+                  files: ./dist/${{ env.VERSION }}.tgz
+                  draft: false
+                  prerelease: false
+                  token: ${{ secrets.GITHUB_TOKEN }}
