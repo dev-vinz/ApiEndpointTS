@@ -76,13 +76,16 @@ jobs:
               run: |
                   current_version=$(node -p "require('./package.json').version")
                   if [ "$current_version" != "${{ env.VERSION }}" ]; then
-                  npm version ${{ env.VERSION }} --no-git-tag-version
+                    npm version ${{ env.VERSION }} --no-git-tag-version
                   else
-                  echo "Version is already set to ${{ env.VERSION }}"
+                    echo "Version is already set to ${{ env.VERSION }}"
                   fi
 
             - name: 📦 Build the package
               run: npm run build
+
+            - name: 🔑 Authenticate with GitHub Package Registry
+              run: npm config set //npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}
 
             - name: 🚀 Publish the package
               env:
