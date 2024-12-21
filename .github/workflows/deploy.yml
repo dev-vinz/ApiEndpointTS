@@ -116,7 +116,7 @@ jobs:
                   name: Release ${{ github.ref_name }}
                   tag_name: ${{ github.ref_name }}
                   body: |
-                      ##
+                      ## What's Changed
                       - Deployment and package publishing for version ${{ github.ref_name }}.
                   files: ./dist/${{ env.VERSION }}.tgz
                   draft: false
