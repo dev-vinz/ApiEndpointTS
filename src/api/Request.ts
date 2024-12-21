@@ -97,7 +97,7 @@ export abstract class Request<T> implements IRequest<T> {
 
             const content: object = response.data;
 
-            if (response.status === StatusCodes.OK) {
+            if (response.status >= 200 && response.status < 300) {
                 return this._intoOutput(content);
             } else {
                 const msg: ApiEndpointErrorMessage =
