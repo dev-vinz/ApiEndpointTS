@@ -22,7 +22,8 @@ export class ApiEndpoint implements IApiEndpoint {
     private readonly _clients: AxiosInstance[];
     private readonly _options: RequestOptions;
 
-    private _indexBuffer: Int32Array;
+    private _currentIndex: number = 0;
+    private _lock: boolean = false;
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
     |*                        CONSTRUCTORS                         *|
@@ -33,13 +34,6 @@ export class ApiEndpoint implements IApiEndpoint {
         {
             this._clients = clients;
             this._options = options;
-        }
-
-        // Tools
-        {
-            this._indexBuffer = new Int32Array(
-                new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT)
-            );
         }
     }
 
@@ -97,12 +91,26 @@ export class ApiEndpoint implements IApiEndpoint {
     |*                           PRIVATE                           *|
     \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+    private _acquireLock(): void {
+        while (this._lock) {
+            // Wait
+        }
+
+        this._lock = true;
+    }
+
+    private _releaseLock(): void {
+        this._lock = false;
+    }
+
     /* * * * * * * * * * * * * * * *\
     |*           GETTERS           *|
     \* * * * * * * * * * * * * * * */
 
     private get _client(): AxiosInstance {
-        const index = Atomics.add(this._indexBuffer, 0, 1);
+        this._acquireLock();
+        const index = this._currentIndex++;
+        this._releaseLock();
 
         return this._clients[index % this._clients.length];
     }
